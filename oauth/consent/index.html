@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOUii 授權</title>
+<!-- MOUii MCP 的 OAuth 同意頁（Supabase OAuth Server 的 authorization path）。規格：docs/SPEC_MCP_v1_AI接口.md -->
+<style>
+  :root { --ink: #1d1b19; --orange: #e8590c; --muted: #6b6560; --bg: #ffffff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif; }
+  main { max-width: 420px; margin: 0 auto; padding: 48px 16px; }
+  .brand { font-weight: 900; font-size: 28px; letter-spacing: .02em; }
+  .card { border: 2px solid var(--ink); border-radius: 4px; padding: 20px; margin-top: 24px; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; }
+  button { flex: 1; font: inherit; font-weight: 700; padding: 12px; border-radius: 4px; border: 2px solid var(--ink); background: var(--bg); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--ink); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .error { color: var(--orange); font-weight: 600; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">MOUii</div>
+  <p class="muted">所以現在要幹嘛？</p>
+
+  <section class="card" id="loading"><p>讀取中…</p></section>
+
+  <section class="card" id="login" hidden>
+    <h1>先登入 MOUii</h1>
+    <p>有 AI 想連到你的 MOUii。請用你在 App 裡使用的帳號登入。</p>
+    <div class="actions"><button class="primary" id="google">用 Google 登入</button></div>
+  </section>
+
+  <section class="card" id="consent" hidden>
+    <h1><span id="client"></span> 想連到你的 MOUii</h1>
+    <p>允許後，它可以：</p>
+    <ul>
+      <li>讀取你的事情、等別人、先放著</li>
+      <li>新增事情與想法、搞定、換邊、加星、補人名、修改內容</li>
+    </ul>
+    <p class="muted">它不能刪除任何資料。帳號：<span id="email"></span></p>
+    <div class="actions">
+      <button id="deny">拒絕</button>
+      <button class="primary" id="approve">允許</button>
+    </div>
+  </section>
+
+  <section class="card" id="failed" hidden>
+    <h1>沒辦法完成授權</h1>
+    <p class="error" id="message"></p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://mlyxjwgpxxximagxmvgn.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_Zmqru5cbRFla0VFXgPl8uQ_Onh-jqqa' // 公開金鑰，與 App 相同
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'pkce', detectSessionInUrl: true } })
+  const authorizationID = new URLSearchParams(location.search).get('authorization_id')
+  const $ = (id) => document.getElementById(id)
+
+  function show(id) {
+    for (const section of ['loading', 'login', 'consent', 'failed']) $(section).hidden = section !== id
+  }
+  function fail(message) {
+    $('message').textContent = message
+    show('failed')
+  }
+
+  async function start() {
+    if (!authorizationID) return fail('網址缺少授權編號，請從 AI 那邊重新開始連線。')
+    const { data: { session } } = await client.auth.getSession()
+    if (!session) return show('login') // 登入完會回到這一頁（redirectTo 保留 authorization_id）
+    const { data, error } = await client.auth.oauth.getAuthorizationDetails(authorizationID)
+    if (error) return fail(error.message)
+    if (data.redirect_url && !data.client) return location.assign(data.redirect_url) // 先前已同意過
+    $('client').textContent = data.client?.name || '一個 AI 工具'
+    $('email').textContent = session.user.email || session.user.id
+    show('consent')
+  }
+
+  async function decide(approve) {
+    $('approve').disabled = $('deny').disabled = true
+    const { data, error } = approve
+      ? await client.auth.oauth.approveAuthorization(authorizationID)
+      : await client.auth.oauth.denyAuthorization(authorizationID)
+    if (error) return fail(error.message)
+    location.assign(data.redirect_url)
+  }
+
+  $('google').onclick = () => client.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + location.pathname + '?authorization_id=' + encodeURIComponent(authorizationID) },
+  })
+  $('approve').onclick = () => decide(true)
+  $('deny').onclick = () => decide(false)
+  start().catch((e) => fail(e.message || String(e)))
+</script>
+</body>
+</html>

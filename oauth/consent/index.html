@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MOUii 授權</title>
-<!-- MOUii MCP 的 OAuth 同意頁（Supabase OAuth Server 的 authorization path）。規格：docs/SPEC_MCP_v1_AI接口.md -->
+<title>MOUii・有春 授權</title>
+<!-- MOUii 與有春共用的 OAuth 同意頁（同一個 Supabase 專案的 OAuth Server authorization path）。
+     規格：MOUii docs/SPEC_MCP_v1_AI接口.md、有春 coulson-KT/uchun docs/SPEC_MCP_v1_AI接口.md -->
 <style>
   :root { --ink: #1d1b19; --orange: #e8590c; --muted: #6b6560; --bg: #ffffff; }
   * { box-sizing: border-box; }
@@ -15,7 +16,9 @@
   h1 { font-size: 20px; margin: 0 0 8px; }
   p { margin: 8px 0; }
   .muted { color: var(--muted); font-size: 14px; }
-  ul { padding-left: 20px; margin: 8px 0; }
+  ul { padding-left: 20px; margin: 4px 0 8px; }
+  h2 { font-size: 15px; margin: 14px 0 0; }
+  .note { border-left: 3px solid var(--orange); padding-left: 10px; }
   .actions { display: flex; gap: 12px; margin-top: 20px; }
   button { flex: 1; font: inherit; font-weight: 700; padding: 12px; border-radius: 4px; border: 2px solid var(--ink); background: var(--bg); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--ink); color: #fff; }
@@ -26,25 +29,34 @@
 </head>
 <body>
 <main>
-  <div class="brand">MOUii</div>
-  <p class="muted">所以現在要幹嘛？</p>
+  <div class="brand">MOUii・有春</div>
+  <p class="muted">所以現在要幹嘛？・未來的錢備好了沒？</p>
 
   <section class="card" id="loading"><p>讀取中…</p></section>
 
   <section class="card" id="login" hidden>
-    <h1>先登入 MOUii</h1>
-    <p>有 AI 想連到你的 MOUii。請用你在 App 裡使用的帳號登入。</p>
+    <h1>先登入</h1>
+    <p>有 AI 想連到你的 MOUii 和有春。請用你在 App 裡使用的帳號登入。</p>
     <div class="actions"><button class="primary" id="google">用 Google 登入</button></div>
   </section>
 
   <section class="card" id="consent" hidden>
-    <h1><span id="client"></span> 想連到你的 MOUii</h1>
+    <h1><span id="client"></span> 想連到你的 MOUii 和有春</h1>
     <p>允許後，它可以：</p>
+    <h2>MOUii</h2>
     <ul>
       <li>讀取你的事情、等別人、先放著</li>
       <li>新增事情與想法、搞定、換邊、加星、補人名、修改內容</li>
+      <li>不能刪除 MOUii 的資料</li>
     </ul>
-    <p class="muted">它不能刪除任何資料。帳號：<span id="email"></span></p>
+    <h2>有春</h2>
+    <ul>
+      <li>讀取你的收入、分配與追蹤</li>
+      <li>和你在 App 裡一樣：新增、修改、刪除收入與項目，記已入帳、勾已留好、記付款</li>
+      <li>不能清空帳本、載入示範或匯入備份</li>
+    </ul>
+    <p class="note">同一次授權，這個 AI 兩個 App 都能存取。只想給其中一個用，請按拒絕。</p>
+    <p class="muted">帳號：<span id="email"></span></p>
     <div class="actions">
       <button id="deny">拒絕</button>
       <button class="primary" id="approve">允許</button>
